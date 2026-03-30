@@ -1,0 +1,5 @@
+*.html
+*_files/
+*.jpg
+*.md
+.github/
