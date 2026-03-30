@@ -1,25 +1,42 @@
 // Pure Web Audio API — no files downloaded, no build weight.
-
-function createAudioContext(): AudioContext {
-  const AC =
-    window.AudioContext ??
-    (window as unknown as { webkitAudioContext: typeof AudioContext })
-      .webkitAudioContext;
-  return new AC();
-}
+//
+// IMPORTANT: AudioEngine must be instantiated synchronously inside a user
+// gesture handler (onClick). The constructor calls new AudioContext() which
+// browsers block if called outside a gesture or inside an async/await chain.
 
 export class AudioEngine {
   analyser: AnalyserNode | null = null;
 
-  private ctx: AudioContext | null = null;
+  // ctx is created synchronously in the constructor — must be called from a
+  // direct user-gesture handler, not from inside an async function.
+  readonly ctx: AudioContext;
+
   private masterGain: GainNode | null = null;
   private noiseSource: AudioBufferSourceNode | null = null;
   private oscillators: OscillatorNode[] = [];
 
+  constructor() {
+    const AC =
+      window.AudioContext ??
+      (
+        window as unknown as {
+          webkitAudioContext: typeof AudioContext;
+        }
+      ).webkitAudioContext;
+    this.ctx = new AC();
+  }
+
   async start(): Promise<void> {
-    this.ctx = createAudioContext();
     const ctx = this.ctx;
-    if (ctx.state === "suspended") await ctx.resume();
+
+    // Resume unconditionally — some browsers start suspended even on click.
+    await ctx.resume();
+
+    // Play a 1-frame silent buffer to fully "unlock" the audio subsystem.
+    const unlock = ctx.createBufferSource();
+    unlock.buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+    unlock.connect(ctx.destination);
+    unlock.start(0);
 
     // ── Master chain ──────────────────────────────────────────────────────────
     this.masterGain = ctx.createGain();
@@ -32,8 +49,22 @@ export class AudioEngine {
     this.masterGain.connect(this.analyser);
     this.analyser.connect(ctx.destination);
 
+    // ── Connection confirmation tone (bypasses master gain — heard instantly) ─
+    // A short descending sweep confirms audio works before the 3 s fade-in.
+    const confirmOsc = ctx.createOscillator();
+    const confirmEnv = ctx.createGain();
+    confirmOsc.type = "sine";
+    confirmOsc.frequency.setValueAtTime(880, ctx.currentTime);
+    confirmOsc.frequency.linearRampToValueAtTime(220, ctx.currentTime + 0.35);
+    confirmEnv.gain.setValueAtTime(0.18, ctx.currentTime);
+    confirmEnv.gain.linearRampToValueAtTime(0.0001, ctx.currentTime + 0.4);
+    confirmOsc.connect(confirmEnv);
+    confirmEnv.connect(ctx.destination);
+    confirmOsc.start();
+    confirmOsc.stop(ctx.currentTime + 0.4);
+
     // ── Digital rain noise ────────────────────────────────────────────────────
-    // 6-second white noise buffer → band-pass filtered to rain texture
+    // 6-second white noise buffer → high-pass + low-pass = broadband rain body
     const SR = ctx.sampleRate;
     const buf = ctx.createBuffer(1, SR * 6, SR);
     const d = buf.getChannelData(0);
@@ -43,33 +74,38 @@ export class AudioEngine {
     this.noiseSource.buffer = buf;
     this.noiseSource.loop = true;
 
-    // band-pass sculpts white noise into rain body
-    const bp = ctx.createBiquadFilter();
-    bp.type = "bandpass";
-    bp.frequency.value = 950;
-    bp.Q.value = 0.5;
+    // High-pass at 200 Hz removes rumble; low-pass at 5 kHz keeps rain texture
+    const hp = ctx.createBiquadFilter();
+    hp.type = "highpass";
+    hp.frequency.value = 200;
 
-    // high-shelf adds "digital sheen" above 3 kHz
-    const shelf = ctx.createBiquadFilter();
-    shelf.type = "highshelf";
-    shelf.frequency.value = 3000;
-    shelf.gain.value = 5;
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.value = 5000;
+
+    // Slight presence boost around 2 kHz for the "digital sheen"
+    const peak = ctx.createBiquadFilter();
+    peak.type = "peaking";
+    peak.frequency.value = 2000;
+    peak.gain.value = 5;
+    peak.Q.value = 1;
 
     const noiseGain = ctx.createGain();
-    noiseGain.gain.value = 0.3;
+    noiseGain.gain.value = 0.55;
 
-    this.noiseSource.connect(bp);
-    bp.connect(shelf);
-    shelf.connect(noiseGain);
+    this.noiseSource.connect(hp);
+    hp.connect(lp);
+    lp.connect(peak);
+    peak.connect(noiseGain);
     noiseGain.connect(this.masterGain);
     this.noiseSource.start();
 
-    // ── Sub drone — 45 Hz server hum ─────────────────────────────────────────
+    // ── Sub drone — 45 Hz server-room hum ────────────────────────────────────
     const sub = ctx.createOscillator();
     sub.type = "sine";
     sub.frequency.value = 45;
     const subGain = ctx.createGain();
-    subGain.gain.value = 0.18;
+    subGain.gain.value = 0.22;
     sub.connect(subGain);
     subGain.connect(this.masterGain);
     sub.start();
@@ -81,29 +117,29 @@ export class AudioEngine {
     hum.frequency.value = 88;
     const humLp = ctx.createBiquadFilter();
     humLp.type = "lowpass";
-    humLp.frequency.value = 130;
+    humLp.frequency.value = 140;
     const humGain = ctx.createGain();
-    humGain.gain.value = 0.055;
+    humGain.gain.value = 0.08;
     hum.connect(humLp);
     humLp.connect(humGain);
     humGain.connect(this.masterGain);
     hum.start();
     this.oscillators.push(hum);
 
-    // ── Slow LFO — volume breathing (0.07 Hz) ────────────────────────────────
+    // ── Slow LFO — natural volume breathing ──────────────────────────────────
     const lfo = ctx.createOscillator();
     lfo.type = "sine";
     lfo.frequency.value = 0.07;
     const lfoGain = ctx.createGain();
-    lfoGain.gain.value = 0.04;
+    lfoGain.gain.value = 0.06;
     lfo.connect(lfoGain);
     lfoGain.connect(noiseGain.gain);
     lfo.start();
     this.oscillators.push(lfo);
 
-    // ── Fade in over 3 s ──────────────────────────────────────────────────────
+    // ── Fade in ambient over 3 s ──────────────────────────────────────────────
     this.masterGain.gain.setValueAtTime(0, ctx.currentTime);
-    this.masterGain.gain.linearRampToValueAtTime(0.72, ctx.currentTime + 3);
+    this.masterGain.gain.linearRampToValueAtTime(1.0, ctx.currentTime + 3);
   }
 
   stop(): void {
@@ -119,7 +155,6 @@ export class AudioEngine {
         this.oscillators.forEach((o) => o.stop());
         ctx.close();
       } catch (_) { /* already cleaned up */ }
-      this.ctx = null;
       this.masterGain = null;
       this.noiseSource = null;
       this.oscillators = [];
@@ -127,21 +162,19 @@ export class AudioEngine {
     }, 1300);
   }
 
-  // High-pitched glitch ping — direct to destination, independent of master vol
+  // High-pitched glitch ping — bypasses master gain for instant response
   ping(): void {
     const ctx = this.ctx;
-    if (!ctx) return;
-
     const osc = ctx.createOscillator();
     const env = ctx.createGain();
     osc.type = "sine";
     osc.frequency.setValueAtTime(2700, ctx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(820, ctx.currentTime + 0.09);
-    env.gain.setValueAtTime(0.06, ctx.currentTime);
-    env.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.16);
+    env.gain.setValueAtTime(0.07, ctx.currentTime);
+    env.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.18);
     osc.connect(env);
     env.connect(ctx.destination);
     osc.start();
-    osc.stop(ctx.currentTime + 0.17);
+    osc.stop(ctx.currentTime + 0.18);
   }
 }
