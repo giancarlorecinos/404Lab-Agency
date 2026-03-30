@@ -25,14 +25,14 @@ const PROJECTS: Project[] = [
   {
     id: "crelosa-poc",
     title: "Crelosa POC",
-    subtitle: "Radiocommunication & Chatbots",
-    tag: "SYSTEM_LIVE",
+    subtitle: "Push-Over-Cellular Communication",
+    tag: "LIVE_DEPLOYMENT",
     tagStatus: "live",
     year: "2024",
     index: "001",
     description:
-      "AI-augmented radio dispatch platform. Real-time voice communication infrastructure with autonomous chatbot agents for operational command and field coordination.",
-    stack: ["Next.js", "OpenAI", "WebSocket", "Node.js", "PostgreSQL"],
+      "Next-generation Push-Over-Cellular (PoC) communication systems. Bridging traditional radio reliability with global cellular infrastructure for mission-critical operations.",
+    stack: ["VoIP", "LTE", "PoC", "GPS", "WebSocket"],
     href: "#",
     gridClass: "md:col-span-2",
   },
