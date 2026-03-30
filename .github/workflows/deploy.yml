@@ -29,70 +29,21 @@ jobs:
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
 
-      # Discover which project actually owns 404lab.agency so we deploy to it.
-      # The domain may be in a personal account project, not the team project.
-      - name: Discover project that owns 404lab.agency
-        id: discover
+      - name: Clear rootDirectory project setting
         run: |
-          echo "=== Searching all accessible projects for 404lab.agency ==="
-
-          # Try personal account first (no teamId param)
-          PERSONAL=$(curl -s \
+          curl -s -X PATCH \
+            "https://api.vercel.com/v9/projects/$VERCEL_PROJECT_ID?teamId=$VERCEL_ORG_ID" \
             -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
-            "https://api.vercel.com/v9/projects?limit=100")
-          echo "Personal account projects:"
-          echo "$PERSONAL" | python3 -c "
-          import json, sys
-          d = json.load(sys.stdin)
-          for p in d.get('projects', []):
-              print(f\"  {p['name']}  id={p['id']}  accountId={p.get('accountId','')}\")
-          " 2>/dev/null || echo "  (none or parse error)"
-
-          # Find project by domain in personal account
-          MATCH=$(echo "$PERSONAL" | python3 -c "
-          import json, sys
-          d = json.load(sys.stdin)
-          for p in d.get('projects', []):
-              for a in p.get('alias', []) + [{'domain': dom} for dom in p.get('targets', {}).values() or []]:
-                  pass
-              # Check project name / id
-              if '404' in p.get('name','').lower():
-                  print(p['id'], p.get('accountId',''))
-          " 2>/dev/null)
-
-          echo "Personal 404 match: '$MATCH'"
-
-          # Try team account
-          TEAM=$(curl -s \
-            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
-            "https://api.vercel.com/v9/projects?limit=100&teamId=$VERCEL_ORG_ID")
-          echo "Team projects:"
-          echo "$TEAM" | python3 -c "
-          import json, sys
-          d = json.load(sys.stdin)
-          for p in d.get('projects', []):
-              print(f\"  {p['name']}  id={p['id']}\")
-          " 2>/dev/null
-
-          # Use domain lookup — most reliable
-          DOMAIN_INFO=$(curl -s \
-            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
-            "https://api.vercel.com/v5/domains/404lab.agency")
-          echo "Domain info for 404lab.agency:"
-          echo "$DOMAIN_INFO" | python3 -c "import json,sys; d=json.load(sys.stdin); print(json.dumps(d, indent=2))" 2>/dev/null
-
-          DOMAIN_INFO2=$(curl -s \
-            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
-            "https://api.vercel.com/v5/domains/www.404lab.agency")
-          echo "Domain info for www.404lab.agency:"
-          echo "$DOMAIN_INFO2" | python3 -c "import json,sys; d=json.load(sys.stdin); print(json.dumps(d, indent=2))" 2>/dev/null
+            -H "Content-Type: application/json" \
+            -d '{"rootDirectory":null}' | jq -r '.rootDirectory // "cleared"'
 
       - name: Link Vercel project
         run: |
-          mkdir -p .vercel
+          mkdir -p web/.vercel
           printf '{"orgId":"%s","projectId":"%s"}' \
             "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" \
-            > .vercel/project.json
+            > web/.vercel/project.json
 
       - name: Deploy to production
+        working-directory: web
         run: vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
