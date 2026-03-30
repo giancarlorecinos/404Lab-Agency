@@ -29,14 +29,6 @@ jobs:
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
 
-      - name: Clear rootDirectory project setting
-        run: |
-          curl -s -X PATCH \
-            "https://api.vercel.com/v9/projects/$VERCEL_PROJECT_ID?teamId=$VERCEL_ORG_ID" \
-            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d '{"rootDirectory":null}' | jq -r '.rootDirectory // "cleared"'
-
       - name: Link Vercel project
         run: |
           mkdir -p web/.vercel
@@ -44,6 +36,14 @@ jobs:
             "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" \
             > web/.vercel/project.json
 
-      - name: Deploy to production
+      - name: Pull Vercel project settings
         working-directory: web
-        run: vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build project
+        working-directory: web
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy prebuilt output
+        working-directory: web
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
