@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import Link from "next/link";
 import { MagneticButton } from "@/components/ui/magnetic-button";
+import { AudioVisualizer } from "@/components/audio/audio-visualizer";
 
 export function Header() {
   const [isMounted, setIsMounted] = useState(false);
@@ -119,11 +120,14 @@ export function Header() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 + (i * 0.1), duration: 0.5 }}
                 >
-                  <Link 
+                  <Link
                     href={link.href}
                     className="relative text-sm text-[#E2E2E2]/70 hover:text-[#E2E2E2] font-mono tracking-widest uppercase transition-colors group outline-none"
                   >
-                    {link.name}
+                    <span className="flex items-center gap-1.5">
+                      {link.name}
+                      {link.name === "Experience" && <AudioVisualizer />}
+                    </span>
                     <span className="absolute -bottom-1 left-0 w-full h-[1px] bg-[#8A2BE2] scale-x-0 group-hover:scale-x-100 transform origin-left transition-transform duration-300" />
                   </Link>
                 </motion.li>

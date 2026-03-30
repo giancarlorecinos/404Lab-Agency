@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import { motion, type TargetAndTransition } from "framer-motion";
 import { NeuralCursor } from "@/components/canvas/neural-cursor";
+import { useAudio } from "@/context/audio-context";
 
 // ─── Shared animation variants ────────────────────────────────────────────────
 
@@ -28,7 +29,7 @@ const LAYERS = [
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
-function NeuralNetworkSVG() {
+function NeuralNetworkSVG({ onPing }: { onPing?: () => void }) {
   const nodes = [
     { x: 60,  y: 200 },
     { x: 160, y: 90  },
@@ -45,6 +46,7 @@ function NeuralNetworkSVG() {
     <svg
       width="460" height="400" viewBox="0 0 460 400"
       className="w-full max-w-[420px] opacity-80"
+      onMouseEnter={onPing}
     >
       {/* Edges */}
       {edges.map(([a, b], i) => (
@@ -116,9 +118,9 @@ function HexGridBg() {
   );
 }
 
-function IxcoreVisual() {
+function IxcoreVisual({ onPing }: { onPing?: () => void }) {
   return (
-    <div className="relative flex items-center justify-center w-72 h-72">
+    <div className="relative flex items-center justify-center w-72 h-72" onMouseEnter={onPing}>
       {/* Pulse ring */}
       <motion.div
         className="absolute w-60 h-60 rounded-full border border-violet-500/15"
@@ -213,6 +215,7 @@ export default function ExperiencePage() {
   const [active, setActive] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<(HTMLElement | null)[]>([]);
+  const { isActive, isPending, toggleAudio, triggerPing } = useAudio();
 
   useEffect(() => {
     const container = containerRef.current;
@@ -435,7 +438,7 @@ export default function ExperiencePage() {
               transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
               className="hidden lg:flex items-center justify-center"
             >
-              <NeuralNetworkSVG />
+              <NeuralNetworkSVG onPing={triggerPing} />
             </motion.div>
 
             {/* Text block — right */}
@@ -627,7 +630,7 @@ export default function ExperiencePage() {
               transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
               className="hidden lg:flex items-center justify-center"
             >
-              <IxcoreVisual />
+              <IxcoreVisual onPing={triggerPing} />
             </motion.div>
           </div>
 
@@ -688,6 +691,47 @@ export default function ExperiencePage() {
           </button>
         ))}
       </nav>
+
+      {/* ── Audio toggle ─────────────────────────────────────────────── */}
+      <button
+        onClick={toggleAudio}
+        disabled={isPending}
+        className="fixed bottom-8 left-6 z-50 flex items-center gap-2.5 group outline-none select-none"
+        aria-label={isActive ? "Deactivate audio" : "Activate audio"}
+      >
+        {/* Status dot */}
+        <div
+          className="relative flex-shrink-0"
+          style={{ width: 8, height: 8 }}
+        >
+          <div
+            className="absolute inset-0 rounded-full transition-all duration-500"
+            style={{
+              background: isActive ? "rgb(167,139,250)" : "rgba(255,255,255,0.18)",
+              boxShadow: isActive ? "0 0 10px rgba(167,139,250,0.9)" : "none",
+            }}
+          />
+          {isActive && (
+            <motion.div
+              className="absolute inset-0 rounded-full"
+              style={{ background: "rgba(167,139,250,0.4)" }}
+              animate={{ scale: [1, 2.2, 1], opacity: [0.6, 0, 0.6] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}
+            />
+          )}
+        </div>
+
+        <span
+          className="font-mono text-[8px] tracking-[0.45em] uppercase transition-colors duration-300"
+          style={{
+            color: isActive
+              ? "rgba(167,139,250,0.75)"
+              : "rgba(255,255,255,0.22)",
+          }}
+        >
+          {isPending ? "LINKING…" : isActive ? "AUDIO LINK ACTIVE" : "INITIATE AUDIO LINK"}
+        </span>
+      </button>
 
       {/* ── Layer label in top-left ───────────────────────────────────── */}
       <div className="fixed top-24 left-6 z-40 pointer-events-none">

@@ -5,6 +5,7 @@ import "./globals.css";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { GlobalBackground } from "@/components/canvas/global-background";
+import { Providers } from "@/components/providers";
 
 const interSans = Inter({
   variable: "--font-sans",
@@ -33,10 +34,12 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-[#0A0A0B]" suppressHydrationWarning>
-        <GlobalBackground />
-        <Header />
-        <div className="relative z-10 flex flex-col min-h-full">{children}</div>
-        <Footer />
+        <Providers>
+          <GlobalBackground />
+          <Header />
+          <div className="relative z-10 flex flex-col min-h-full">{children}</div>
+          <Footer />
+        </Providers>
       </body>
     </html>
   );
