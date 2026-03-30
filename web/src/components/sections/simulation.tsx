@@ -1,5 +1,7 @@
 "use client";
 
+import React from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 
 const projects = [
@@ -13,6 +15,8 @@ const projects = [
     tags: ["0x01", "SENTIENT AI", "VOLUMETRIC RENDERING"],
     desc: "A high-fidelity digital ecosystem and surrealist reality experiment. Exploring the boundaries of perception through immersive web architecture.",
     featured: true,
+    href: "https://purplewaifuverse.com",
+    external: true,
   },
   {
     id: "galaxy-game",
@@ -24,6 +28,8 @@ const projects = [
     tags: ["0x02", "PROCEDURAL GEN", "ON-CHAIN DYNAMICS"],
     desc: "A sprawling cosmic frontier. Mapping and staking star systems in a procedurally generated deep-space economy.",
     featured: false,
+    href: null,
+    external: false,
   },
   {
     id: "project-zero",
@@ -35,6 +41,8 @@ const projects = [
     tags: ["0xFF", "CLASSIFIED", "TBD"],
     desc: "An experimental rendering pipeline. Heavy computation dedicated to physical simulations and cyber-forensic analysis.",
     featured: false,
+    href: null,
+    external: false,
   },
   {
     id: "ixcore",
@@ -46,6 +54,8 @@ const projects = [
     tags: ["0x04", "NEURAL FRAMEWORK", "DIGITAL SOVEREIGNTY"],
     desc: "The Sovereign Nexus. Engineering high-availability digital fortresses and autonomous neural frameworks. We build the invisible layers that sustain modern digital sovereignty.",
     featured: true,
+    href: "/experience",
+    external: false,
   },
 ];
 
@@ -96,6 +106,12 @@ export function Simulation() {
           const isIxcore = project.id === "ixcore";
           const colSpan = project.featured ? "md:col-span-2" : "md:col-span-1";
 
+          const cardLink = project.href
+            ? project.external
+              ? { as: "a" as const, href: project.href, target: "_blank", rel: "noopener noreferrer" }
+              : { as: Link as React.ElementType, href: project.href }
+            : null;
+
           return (
             <motion.div
               key={project.id}
@@ -103,9 +119,26 @@ export function Simulation() {
               whileInView={{ opacity: 1, y: 0, scale: 1 }}
               viewport={{ once: true, amount: 0.15 }}
               transition={{ delay: i * 0.1, duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
-              className={`group relative rounded-2xl overflow-hidden cursor-crosshair transform-gpu min-h-[300px] md:min-h-0 ${colSpan}`}
+              className={`group relative rounded-2xl overflow-hidden transform-gpu min-h-[300px] md:min-h-0 ${project.href ? "cursor-pointer" : "cursor-crosshair"} ${colSpan}`}
               style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.06)" }}
             >
+              {/* Invisible full-card link overlay */}
+              {cardLink && cardLink.as === "a" && (
+                <a
+                  href={cardLink.href as string}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="absolute inset-0 z-20"
+                  aria-label={`Visit ${project.title}`}
+                />
+              )}
+              {cardLink && cardLink.as !== "a" && (
+                <Link
+                  href={cardLink.href as string}
+                  className="absolute inset-0 z-20"
+                  aria-label={`Visit ${project.title}`}
+                />
+              )}
               {/* Base gradient */}
               <div
                 className={`absolute inset-0 bg-gradient-to-br ${project.color} opacity-20 transition-opacity duration-700 group-hover:opacity-40`}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 
 // ─── Types & Data ──────────────────────────────────────────────────────────────
@@ -33,7 +34,7 @@ const PROJECTS: Project[] = [
     description:
       "Next-generation Push-Over-Cellular (PoC) communication systems. Bridging traditional radio reliability with global cellular infrastructure for mission-critical operations.",
     stack: ["VoIP", "LTE", "PoC", "GPS", "WebSocket"],
-    href: "#",
+    href: "https://crelosapoc.com",
     gridClass: "md:col-span-2",
   },
   {
@@ -47,7 +48,7 @@ const PROJECTS: Project[] = [
     description:
       "Foundational infrastructure layer powering the 404Lab ecosystem. High-availability framework with cryptographic integrity and autonomous resilience.",
     stack: ["Rust", "PostgreSQL", "Redis", "K8s", "gRPC"],
-    href: "#",
+    href: "/experience",
     gridClass: "md:col-span-1",
   },
   {
@@ -61,7 +62,7 @@ const PROJECTS: Project[] = [
     description:
       "Premium artisanal coffee brand identity and digital commerce platform. Elevated sensory experience designed for a discerning high-end market.",
     stack: ["Next.js", "Shopify", "Tailwind", "Framer"],
-    href: "#",
+    href: "https://balamreserve.com",
     gridClass: "md:col-span-1",
   },
   {
@@ -75,7 +76,7 @@ const PROJECTS: Project[] = [
     description:
       "Immersive surrealist digital reality. Generative art, spatial WebGL environments, and procedural interaction design at the edge of the perceivable.",
     stack: ["Three.js", "WebGL", "GSAP", "React", "GLSL"],
-    href: "#",
+    href: "https://purplewaifuverse.com",
     gridClass: "md:col-span-2",
   },
 ];
@@ -625,12 +626,18 @@ function LoadingOverlay({
 
 export default function LabsPage() {
   const [selected, setSelected] = useState<Project | null>(null);
+  const router = useRouter();
 
   const handleComplete = useCallback(() => {
     const href = selected?.href;
     setSelected(null);
-    if (href && href !== "#") window.location.href = href;
-  }, [selected]);
+    if (!href) return;
+    if (href.startsWith("http")) {
+      window.open(href, "_blank", "noopener,noreferrer");
+    } else {
+      router.push(href);
+    }
+  }, [selected, router]);
 
   return (
     <>
