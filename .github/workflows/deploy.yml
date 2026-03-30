@@ -29,8 +29,6 @@ jobs:
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
 
-      # Write link file at the repo root so Vercel sees the full monorepo
-      # and resolves rootDirectory=web from its own project settings.
       - name: Link Vercel project
         run: |
           mkdir -p .vercel
@@ -39,4 +37,18 @@ jobs:
             > .vercel/project.json
 
       - name: Deploy to production
-        run: vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
+        id: deploy
+        run: |
+          DEPLOY_URL=$(vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }} 2>&1 | tail -1)
+          echo "url=$DEPLOY_URL" >> "$GITHUB_OUTPUT"
+          echo "Deployed: $DEPLOY_URL"
+
+      # Ensure the custom domain always points to the latest deployment.
+      # This is a no-op if the domain is already aliased; --yes skips confirmation.
+      - name: Alias custom domain
+        run: |
+          vercel alias set "${{ steps.deploy.outputs.url }}" 404lab.agency \
+            --token=${{ secrets.VERCEL_TOKEN }} --yes || true
+          vercel alias set "${{ steps.deploy.outputs.url }}" www.404lab.agency \
+            --token=${{ secrets.VERCEL_TOKEN }} --yes || true
+          echo "Domain alias complete"
