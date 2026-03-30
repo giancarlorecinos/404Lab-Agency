@@ -47,7 +47,7 @@ export function Terminal() {
   };
 
   return (
-    <section className="relative min-h-[80vh] flex flex-col items-center justify-center bg-transparent px-4 md:px-8 py-32 border-t border-border/10">
+    <section id="contact-form" className="relative min-h-[80vh] flex flex-col items-center justify-center bg-transparent px-4 md:px-8 py-32 border-t border-border/10">
 
       {/* Background Grid Pattern */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />

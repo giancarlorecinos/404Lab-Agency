@@ -37,7 +37,7 @@ export function Header() {
     setScrolled(latest > 50);
   });
 
-  const scrollToPhase2 = () => {
+  const scrollToContact = () => {
     setMenuOpen(false);
     try {
       const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
@@ -60,7 +60,7 @@ export function Header() {
     setIsFlashing(true);
     setTimeout(() => {
       setIsFlashing(false);
-      document.getElementById("phase-2")?.scrollIntoView({ behavior: "smooth" });
+      document.getElementById("contact-form")?.scrollIntoView({ behavior: "smooth" });
     }, 200);
   };
 
@@ -148,9 +148,11 @@ export function Header() {
               transition={{ delay: 0.6, type: "spring", stiffness: 100 }}
             >
               <motion.button
-                onClick={scrollToPhase2}
+                onClick={scrollToContact}
                 whileTap={{ scale: 0.95 }}
                 whileHover={{ scale: 1.05, boxShadow: "0px 0px 15px rgba(138, 43, 226, 0.6)" }}
+                animate={{ boxShadow: ["0 0 0px rgba(138,43,226,0)", "0 0 12px rgba(138,43,226,0.35)", "0 0 0px rgba(138,43,226,0)"] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                 className="hidden md:flex items-center justify-center px-6 py-2.5 rounded-sm bg-[#0A0A0B] border border-[#E2E2E2]/20 text-[#E2E2E2] font-mono text-xs uppercase tracking-[0.2em] hover:bg-[#8A2BE2] hover:text-white hover:border-[#8A2BE2] transition-colors duration-300 outline-none"
               >
                 INITIATE PROTOCOL
@@ -231,12 +233,15 @@ export function Header() {
                 transition={{ delay: 0.28, duration: 0.4 }}
                 className="mt-10"
               >
-                <button
-                  onClick={scrollToPhase2}
-                  className="w-full min-h-[52px] bg-[#8A2BE2] text-white font-mono text-sm uppercase tracking-[0.25em] rounded-sm active:scale-95 transition-transform"
+                <motion.button
+                  onClick={scrollToContact}
+                  animate={{ boxShadow: ["0 0 0px rgba(138,43,226,0)", "0 0 20px rgba(138,43,226,0.5)", "0 0 0px rgba(138,43,226,0)"] }}
+                  transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                  whileTap={{ scale: 0.97 }}
+                  className="w-full min-h-[52px] bg-[#8A2BE2] text-white font-mono text-sm uppercase tracking-[0.25em] rounded-sm transition-transform"
                 >
                   INITIATE PROTOCOL
-                </button>
+                </motion.button>
               </motion.div>
             </nav>
 

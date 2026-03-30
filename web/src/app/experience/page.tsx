@@ -643,7 +643,7 @@ export default function ExperiencePage() {
             className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3"
           >
             <a
-              href="/#phase-2"
+              href="/#contact-form"
               className="group relative px-9 py-3 font-mono text-sm tracking-[0.35em] uppercase text-violet-300 border border-violet-500/30 transition-all duration-300 hover:border-violet-400/70 hover:text-violet-200"
               style={{ backdropFilter: "blur(4px)" }}
             >

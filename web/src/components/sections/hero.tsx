@@ -51,9 +51,9 @@ export function Hero() {
     // 2. Dispatch Custom Event for the GlobalBackground Canvas Glitch
     window.dispatchEvent(new CustomEvent('trigger-rain-glitch'));
 
-    // 3. Smooth scroll programmatic approach simulating standard anchor
+    // 3. Smooth scroll to contact form
     setTimeout(() => {
-      document.getElementById('phase-2')?.scrollIntoView({ behavior: 'smooth' });
+      document.getElementById('contact-form')?.scrollIntoView({ behavior: 'smooth' });
     }, 150);
   };
 
@@ -97,8 +97,10 @@ export function Hero() {
           <motion.button
             onClick={triggerSequence}
             whileTap={{ scale: 0.95 }}
-            whileHover={{ scale: 1.05, boxShadow: "0px 0px 15px rgba(138, 43, 226, 0.6)" }}
-            className="px-10 py-5 flex items-center justify-center rounded-full border border-border/50 bg-[#0A0A0B]/50 text-[#E2E2E2] font-mono text-sm uppercase tracking-[0.2em] backdrop-blur-md hover:bg-[#8A2BE2] hover:text-white hover:border-[#8A2BE2] transition-colors duration-300 shadow-[0_0_0_rgba(138,43,226,0)] outline-none"
+            whileHover={{ scale: 1.05, boxShadow: "0px 0px 20px rgba(138, 43, 226, 0.7)" }}
+            animate={{ boxShadow: ["0 0 0px rgba(138,43,226,0)", "0 0 18px rgba(138,43,226,0.4)", "0 0 0px rgba(138,43,226,0)"] }}
+            transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+            className="px-10 py-5 flex items-center justify-center rounded-full border border-border/50 bg-[#0A0A0B]/50 text-[#E2E2E2] font-mono text-sm uppercase tracking-[0.2em] backdrop-blur-md hover:bg-[#8A2BE2] hover:text-white hover:border-[#8A2BE2] transition-colors duration-300 outline-none"
           >
             Initiate Sequence
           </motion.button>
