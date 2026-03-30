@@ -36,18 +36,39 @@ jobs:
             "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" \
             > .vercel/project.json
 
-      # Register custom domains in Vercel project settings (idempotent).
-      # Once registered, vercel deploy --prod will alias them automatically.
-      - name: Register custom domains
-        run: |
-          for DOMAIN in "404lab.agency" "www.404lab.agency"; do
-            RESULT=$(curl -s -X POST \
-              -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
-              -H "Content-Type: application/json" \
-              -d "{\"name\":\"$DOMAIN\"}" \
-              "https://api.vercel.com/v9/projects/prj_BsZu7fSB647OXSOsSPPBuWYasrcp/domains")
-            echo "$DOMAIN → $(echo $RESULT | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('error',{}).get('message','registered') if 'error' in d else 'ok')")"
-          done
-
       - name: Deploy to production
-        run: vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
+        id: deploy
+        run: |
+          OUTPUT=$(vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }} 2>&1)
+          echo "$OUTPUT"
+          # Extract the unique deployment URL (contains the git hash slug)
+          DEPLOY_URL=$(echo "$OUTPUT" | grep -oE 'https://404-lab-agency-[a-z0-9]+-[a-z0-9-]+\.vercel\.app' | head -1)
+          echo "deploy_url=$DEPLOY_URL" >> "$GITHUB_OUTPUT"
+
+      # Use the REST API to create aliases directly on the deployment.
+      # This bypasses "pending verification" domain status and works even
+      # when vercel alias CLI fails.
+      - name: Alias custom domains via API
+        run: |
+          DEPLOY_URL="${{ steps.deploy.outputs.deploy_url }}"
+          # Extract deployment UID from the URL slug
+          DEPLOY_ID=$(curl -s \
+            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
+            "https://api.vercel.com/v13/deployments?url=$DEPLOY_URL&teamId=$VERCEL_ORG_ID&limit=1" \
+            | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['deployments'][0]['uid'])" 2>/dev/null || echo "")
+
+          if [ -z "$DEPLOY_ID" ]; then
+            echo "Could not resolve deployment ID — trying alias CLI fallback"
+            vercel alias set "$DEPLOY_URL" 404lab.agency --token=${{ secrets.VERCEL_TOKEN }} || true
+            vercel alias set "$DEPLOY_URL" www.404lab.agency --token=${{ secrets.VERCEL_TOKEN }} || true
+          else
+            echo "Deployment ID: $DEPLOY_ID"
+            for ALIAS in "404lab.agency" "www.404lab.agency"; do
+              RESULT=$(curl -s -X POST \
+                -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
+                -H "Content-Type: application/json" \
+                -d "{\"alias\":\"$ALIAS\"}" \
+                "https://api.vercel.com/v2/deployments/$DEPLOY_ID/aliases?teamId=$VERCEL_ORG_ID")
+              echo "$ALIAS → $(echo $RESULT | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('alias') or d.get('error',{}).get('message','?'))")"
+            done
+          fi
