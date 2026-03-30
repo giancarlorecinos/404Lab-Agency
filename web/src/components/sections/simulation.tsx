@@ -1,13 +1,6 @@
 "use client";
 
-import { useRef } from "react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
-
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger, useGSAP);
-}
+import { motion } from "framer-motion";
 
 const projects = [
   {
@@ -59,23 +52,19 @@ const projects = [
 function CoreIcon() {
   return (
     <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-70 group-hover:opacity-100 transition-opacity duration-300">
-      {/* Outer hexagon */}
       <polygon
         points="20,2 35,10.5 35,29.5 20,38 5,29.5 5,10.5"
         stroke="rgba(167,139,250,0.6)"
         strokeWidth="1"
         fill="none"
       />
-      {/* Inner hexagon */}
       <polygon
         points="20,9 29,14 29,26 20,31 11,26 11,14"
         stroke="rgba(167,139,250,0.4)"
         strokeWidth="0.75"
         fill="rgba(109,40,217,0.15)"
       />
-      {/* Core center dot */}
       <circle cx="20" cy="20" r="3" fill="rgba(167,139,250,0.9)" className="animate-pulse" />
-      {/* Circuit lines */}
       <line x1="20" y1="9"  x2="20" y2="14" stroke="rgba(167,139,250,0.5)" strokeWidth="0.75" />
       <line x1="20" y1="26" x2="20" y2="31" stroke="rgba(167,139,250,0.5)" strokeWidth="0.75" />
       <line x1="29" y1="14" x2="29" y2="10.5" stroke="rgba(167,139,250,0.5)" strokeWidth="0.75" />
@@ -85,36 +74,9 @@ function CoreIcon() {
 }
 
 export function Simulation() {
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const gridRef = useRef<HTMLDivElement>(null);
-
-  useGSAP(() => {
-    const cards = gridRef.current?.querySelectorAll(".sim-card");
-    if (!cards) return;
-
-    gsap.fromTo(
-      cards,
-      { opacity: 0, y: 40, scale: 0.97 },
-      {
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        duration: 0.9,
-        ease: "power3.out",
-        stagger: 0.12,
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: "top 75%",
-          once: true,
-        },
-      }
-    );
-  }, { scope: sectionRef });
-
   return (
     <section
       id="phase-2"
-      ref={sectionRef}
       className="relative py-24 md:py-36 bg-transparent overflow-hidden"
     >
       {/* Section header */}
@@ -129,21 +91,20 @@ export function Simulation() {
       </div>
 
       {/* Bento Grid */}
-      <div
-        ref={gridRef}
-        className="px-4 md:px-[10vw] grid grid-cols-1 md:grid-cols-3 auto-rows-[380px] gap-5"
-      >
+      <div className="px-4 md:px-[10vw] grid grid-cols-1 md:grid-cols-3 auto-rows-auto md:auto-rows-[380px] gap-5">
         {projects.map((project, i) => {
           const isIxcore = project.id === "ixcore";
           const colSpan = project.featured ? "md:col-span-2" : "md:col-span-1";
 
           return (
-            <div
+            <motion.div
               key={project.id}
-              className={`sim-card group relative rounded-2xl overflow-hidden cursor-crosshair transform-gpu ${colSpan}`}
-              style={{
-                boxShadow: `0 0 0 1px rgba(255,255,255,0.06)`,
-              }}
+              initial={{ opacity: 0, y: 36, scale: 0.97 }}
+              whileInView={{ opacity: 1, y: 0, scale: 1 }}
+              viewport={{ once: true, amount: 0.15 }}
+              transition={{ delay: i * 0.1, duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
+              className={`group relative rounded-2xl overflow-hidden cursor-crosshair transform-gpu min-h-[300px] md:min-h-0 ${colSpan}`}
+              style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.06)" }}
             >
               {/* Base gradient */}
               <div
@@ -162,7 +123,6 @@ export function Simulation() {
                       background: `radial-gradient(ellipse at 60% 50%, rgba(${project.glowRgb}, 0.25) 0%, transparent 70%)`,
                     }}
                   />
-                  {/* Industrial scan-line overlay */}
                   <div
                     className="absolute inset-0 opacity-[0.04]"
                     style={{
@@ -181,19 +141,13 @@ export function Simulation() {
               />
 
               {/* Content */}
-              <div className="relative h-full flex flex-col justify-between p-8 md:p-10 z-10 transition-transform duration-500 group-hover:-translate-y-1 group-hover:translate-x-1">
+              <div className="relative h-full flex flex-col justify-between p-7 md:p-10 z-10 transition-transform duration-500 group-hover:-translate-y-1 group-hover:translate-x-1">
                 <div className="flex justify-between items-start">
                   <div>
-                    {/* Index tag */}
                     <span className="font-mono text-[10px] tracking-[0.25em] text-white/30 uppercase mb-3 block">
                       {project.tags[0]}
                     </span>
-                    <h3
-                      className="text-3xl md:text-4xl font-bold tracking-tight text-white mb-2 transition-all duration-300"
-                      style={{
-                        filter: "drop-shadow(0 0 0px transparent)",
-                      }}
-                    >
+                    <h3 className="text-3xl md:text-4xl font-bold tracking-tight text-white mb-2 transition-all duration-300">
                       <span className="group-hover:drop-shadow-[2px_0_0_rgba(255,0,80,0.7)] transition-all duration-300 inline-block">
                         {project.title}
                       </span>
@@ -203,7 +157,6 @@ export function Simulation() {
                     </span>
                   </div>
 
-                  {/* Core icon for Ixcore, tag pills for others */}
                   <div className="flex flex-col items-end gap-3">
                     {isIxcore ? (
                       <CoreIcon />
@@ -222,7 +175,7 @@ export function Simulation() {
                   </div>
                 </div>
 
-                <div className="flex justify-between items-end gap-6">
+                <div className="flex justify-between items-end gap-6 mt-8 md:mt-0">
                   <p
                     className={`text-white/55 leading-relaxed font-medium transition-colors duration-500 group-hover:text-white/75 ${
                       project.featured ? "max-w-lg text-base md:text-lg" : "max-w-xs text-sm md:text-base"
@@ -231,7 +184,6 @@ export function Simulation() {
                     {project.desc}
                   </p>
 
-                  {/* Ixcore: tag pills at bottom */}
                   {isIxcore && (
                     <div className="hidden md:flex flex-col gap-1.5 items-end flex-shrink-0">
                       {project.tags.slice(1).map((t) => (
@@ -245,7 +197,7 @@ export function Simulation() {
                     </div>
                   )}
 
-                  {/* Arrow CTA */}
+                  {/* Arrow CTA — 56×56 meets 44px touch target requirement */}
                   <div
                     className={`flex-shrink-0 w-14 h-14 rounded-full border flex items-center justify-center backdrop-blur-md transition-all duration-500 ${
                       isIxcore
@@ -277,11 +229,10 @@ export function Simulation() {
                 }`}
               />
 
-              {/* Ixcore: left edge power-line accent */}
               {isIxcore && (
                 <div className="absolute inset-y-0 left-0 w-px scale-y-0 group-hover:scale-y-100 transition-transform duration-700 ease-out origin-top bg-gradient-to-b from-violet-400/80 via-violet-600/40 to-transparent" />
               )}
-            </div>
+            </motion.div>
           );
         })}
       </div>
