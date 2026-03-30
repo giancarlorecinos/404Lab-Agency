@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 // ─── Types & Data ──────────────────────────────────────────────────────────────
 
-type TagStatus = "live" | "active" | "core" | "staging";
+type TagStatus = "live" | "active" | "core" | "staging" | "nsfw";
 
 interface Project {
   id: string;
@@ -67,14 +67,14 @@ const PROJECTS: Project[] = [
   },
   {
     id: "purple-verse",
-    title: "Purple Verse",
-    subtitle: "Surrealist Digital Reality",
-    tag: "ACTIVE",
-    tagStatus: "active",
+    title: "Purple Waifuverse",
+    subtitle: "Classified Deployment",
+    tag: "NSFW_DEPLOYMENT",
+    tagStatus: "nsfw",
     year: "2024",
     index: "004",
     description:
-      "Immersive surrealist digital reality. Generative art, spatial WebGL environments, and procedural interaction design at the edge of the perceivable.",
+      "Classified Ecosystem: Adult Content. Engineering a private, high-fidelity immersive world for explicit digital art and mature narrative experiences. This deployment showcases complex data synchronization and private community infrastructure.",
     stack: ["Three.js", "WebGL", "GSAP", "React", "GLSL"],
     href: "https://purplewaifuverse.com",
     gridClass: "md:col-span-2",
@@ -86,6 +86,7 @@ const TAG_CONFIG: Record<TagStatus, { dot: string; text: string; border: string;
   active:  { dot: "bg-violet-400",   text: "text-violet-400",   border: "border-violet-500/30",  pulse: true  },
   core:    { dot: "bg-violet-400",   text: "text-violet-400",   border: "border-violet-500/30",  pulse: false },
   staging: { dot: "bg-amber-400/60", text: "text-amber-400/60", border: "border-amber-500/20",   pulse: false },
+  nsfw:    { dot: "bg-[#8A2BE2]",    text: "text-[#8A2BE2]",    border: "border-[#8A2BE2]/30",   pulse: true  },
 };
 
 // ─── Scanning-frame visuals (unique per project) ───────────────────────────────
@@ -388,7 +389,26 @@ function ProjectCard({
       />
 
       {/* Scanning frame */}
-      <ScanningFrame project={project} />
+      <div className="relative">
+        <ScanningFrame project={project} />
+        {/* NSFW blur overlay — fades on hover */}
+        {project.tagStatus === "nsfw" && (
+          <motion.div
+            className="absolute inset-0 flex flex-col items-center justify-center gap-2 pointer-events-none"
+            style={{ backdropFilter: "blur(12px)", background: "rgba(8,8,9,0.55)" }}
+            animate={{ opacity: hovered ? 0 : 1 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+          >
+            <span className="font-mono text-[8px] tracking-[0.5em] text-[#8A2BE2]/70 uppercase">
+              Access Restricted
+            </span>
+            <div className="w-px h-4 bg-[#8A2BE2]/30" />
+            <span className="font-mono text-[7px] tracking-[0.35em] text-white/20 uppercase">
+              Hover to reveal
+            </span>
+          </motion.div>
+        )}
+      </div>
 
       {/* Info section */}
       <div className="flex flex-col flex-1 p-5 gap-4">

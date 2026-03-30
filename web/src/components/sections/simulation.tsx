@@ -7,8 +7,8 @@ import { motion } from "framer-motion";
 const projects = [
   {
     id: "purple-verse",
-    title: "Purple Verse",
-    subtitle: "High-Fidelity Digital Ecosystem",
+    title: "Purple Waifuverse",
+    subtitle: "Classified Digital Ecosystem",
     color: "from-purple-600 to-fuchsia-600",
     glowRgb: "168, 85, 247",
     glowIntensity: "0.35",
@@ -96,7 +96,7 @@ export function Simulation() {
           <span className="text-muted-foreground/50">Realities.</span>
         </h2>
         <p className="max-w-xl text-muted-foreground font-medium text-sm md:text-base leading-relaxed hidden md:block">
-          From the surrealist architecture of Purple Verse to the sovereign infrastructure of Ixcore. We don&apos;t just build products — we engineer localized realities.
+          From the classified architecture of Purple Waifuverse to the sovereign infrastructure of Ixcore. We don&apos;t just build products — we engineer localized realities.
         </p>
       </div>
 
