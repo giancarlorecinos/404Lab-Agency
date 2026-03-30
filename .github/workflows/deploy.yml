@@ -36,19 +36,18 @@ jobs:
             "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" \
             > .vercel/project.json
 
-      - name: Deploy to production
-        id: deploy
+      # Register custom domains in Vercel project settings (idempotent).
+      # Once registered, vercel deploy --prod will alias them automatically.
+      - name: Register custom domains
         run: |
-          DEPLOY_URL=$(vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }} 2>&1 | tail -1)
-          echo "url=$DEPLOY_URL" >> "$GITHUB_OUTPUT"
-          echo "Deployed: $DEPLOY_URL"
+          for DOMAIN in "404lab.agency" "www.404lab.agency"; do
+            RESULT=$(curl -s -X POST \
+              -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
+              -H "Content-Type: application/json" \
+              -d "{\"name\":\"$DOMAIN\"}" \
+              "https://api.vercel.com/v9/projects/prj_BsZu7fSB647OXSOsSPPBuWYasrcp/domains")
+            echo "$DOMAIN → $(echo $RESULT | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('error',{}).get('message','registered') if 'error' in d else 'ok')")"
+          done
 
-      # Ensure the custom domain always points to the latest deployment.
-      # This is a no-op if the domain is already aliased; --yes skips confirmation.
-      - name: Alias custom domain
-        run: |
-          vercel alias set "${{ steps.deploy.outputs.url }}" 404lab.agency \
-            --token=${{ secrets.VERCEL_TOKEN }} --yes || true
-          vercel alias set "${{ steps.deploy.outputs.url }}" www.404lab.agency \
-            --token=${{ secrets.VERCEL_TOKEN }} --yes || true
-          echo "Domain alias complete"
+      - name: Deploy to production
+        run: vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
