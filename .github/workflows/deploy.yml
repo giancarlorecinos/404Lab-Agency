@@ -7,11 +7,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write  # Required for OIDC token exchange with Vercel
-
-env:
-  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
 jobs:
   deploy-production:
@@ -32,11 +27,18 @@ jobs:
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
 
-      # OIDC: Exchange GitHub identity token for a short-lived Vercel token.
-      # This eliminates the need for a long-lived VERCEL_TOKEN secret.
-      # Requires the Vercel project to have GitHub OIDC trust configured.
-      # sub claim format: repo:giancarlorecinos/404Lab-Agency:ref:refs/heads/main
-      - name: Pull Vercel environment (OIDC)
+      # Explicitly write the project link file so the CLI knows which project
+      # to target without needing an interactive `vercel link` step.
+      - name: Link Vercel project
+        working-directory: ./web
+        run: |
+          mkdir -p .vercel
+          printf '{"orgId":"%s","projectId":"%s"}' \
+            "${{ secrets.VERCEL_ORG_ID }}" \
+            "${{ secrets.VERCEL_PROJECT_ID }}" \
+            > .vercel/project.json
+
+      - name: Pull Vercel environment
         working-directory: ./web
         run: |
           vercel pull --yes \
