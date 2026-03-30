@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
 jobs:
   deploy-production:
     name: Deploy — Production
@@ -25,46 +29,13 @@ jobs:
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
 
-      # Use the Vercel REST API to find the correct projectId + orgId
-      # (the VERCEL_PROJECT_ID / VERCEL_ORG_ID secrets may be stale or wrong,
-      #  but the token is valid — so we resolve IDs at runtime).
-      - name: Discover Vercel project IDs
+      - name: Link Vercel project
         working-directory: ./web
         run: |
-          RESPONSE=$(curl -s \
-            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
-            "https://api.vercel.com/v9/projects?limit=100")
-
-          echo "Available projects:"
-          echo "$RESPONSE" | python3 -c "
-          import json, sys
-          data = json.load(sys.stdin)
-          for p in data.get('projects', []):
-              print(f\"  {p['name']}  id={p['id']}  accountId={p.get('accountId','')}\")
-          "
-
-          # Match project by name — adjust the pattern if your project has a different name
-          MATCH=$(echo "$RESPONSE" | python3 -c "
-          import json, sys
-          data = json.load(sys.stdin)
-          for p in data.get('projects', []):
-              name = p.get('name','').lower()
-              if '404lab' in name or '404-lab' in name:
-                  print(p['id'], p.get('accountId',''))
-                  break
-          ")
-
-          if [ -z "\$MATCH" ]; then
-            echo '::error::Could not find a project matching "404lab" — check the name above and update the workflow match pattern'
-            exit 1
-          fi
-
-          PROJECT_ID=\$(echo "\$MATCH" | awk '{print \$1}')
-          ORG_ID=\$(echo "\$MATCH" | awk '{print \$2}')
-          echo "Resolved → projectId=\$PROJECT_ID  orgId=\$ORG_ID"
-
           mkdir -p .vercel
-          printf '{"orgId":"%s","projectId":"%s"}' "\$ORG_ID" "\$PROJECT_ID" > .vercel/project.json
+          printf '{"orgId":"%s","projectId":"%s"}' \
+            "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" \
+            > .vercel/project.json
 
       - name: Pull Vercel environment
         working-directory: ./web
