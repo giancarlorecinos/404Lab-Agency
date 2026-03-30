@@ -3,6 +3,7 @@ import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 import { Header } from "@/components/layout/header";
+import { Footer } from "@/components/layout/footer";
 import { GlobalBackground } from "@/components/canvas/global-background";
 
 const interSans = Inter({
@@ -35,6 +36,7 @@ export default function RootLayout({
         <GlobalBackground />
         <Header />
         <div className="relative z-10 flex flex-col min-h-full">{children}</div>
+        <Footer />
       </body>
     </html>
   );

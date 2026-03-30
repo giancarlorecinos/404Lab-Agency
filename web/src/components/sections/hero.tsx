@@ -93,8 +93,8 @@ export function Hero() {
           Autonomous AI Agents, and Cryptographic Infrastructure.
         </motion.p>
 
-        <motion.div variants={itemVariants} className="pt-8">
-          <motion.button 
+        <motion.div variants={itemVariants} className="pt-8 flex flex-col items-center gap-5">
+          <motion.button
             onClick={triggerSequence}
             whileTap={{ scale: 0.95 }}
             whileHover={{ scale: 1.05, boxShadow: "0px 0px 15px rgba(138, 43, 226, 0.6)" }}
@@ -102,6 +102,9 @@ export function Hero() {
           >
             Initiate Sequence
           </motion.button>
+          <span className="font-mono text-[10px] uppercase tracking-[0.5em] text-white/20 pointer-events-none select-none">
+            Strategic Design Unit // Powered by Ixcore® Systems
+          </span>
         </motion.div>
       </motion.div>
 
