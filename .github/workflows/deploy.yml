@@ -29,15 +29,14 @@ jobs:
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
 
+      # Write link file at the repo root so Vercel sees the full monorepo
+      # and resolves rootDirectory=web from its own project settings.
       - name: Link Vercel project
-        working-directory: ./web
         run: |
           mkdir -p .vercel
           printf '{"orgId":"%s","projectId":"%s"}' \
             "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" \
             > .vercel/project.json
 
-      # Let Vercel's cloud build handle compilation — avoids prebuilt hand-off issues
       - name: Deploy to production
-        working-directory: ./web
         run: vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
