@@ -24,11 +24,26 @@ jobs:
           cache: 'npm'
           cache-dependency-path: web/package-lock.json
 
+      - name: Install dependencies
+        working-directory: ./web
+        run: npm ci
+
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
 
-      # Explicitly write the project link file so the CLI knows which project
-      # to target without needing an interactive `vercel link` step.
+      # Validate token and resolve org + project IDs via the Vercel REST API.
+      # If this step fails, the VERCEL_TOKEN secret is invalid or expired.
+      - name: Validate Vercel token
+        run: |
+          HTTP=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
+            https://api.vercel.com/v2/user)
+          echo "Vercel API status: $HTTP"
+          [ "$HTTP" = "200" ] || { echo "::error::VERCEL_TOKEN is invalid (HTTP $HTTP)"; exit 1; }
+
+      # Write the project link file from secrets.
+      # VERCEL_ORG_ID  → Project Settings → General → "Team ID" (team_xxx) or your user ID
+      # VERCEL_PROJECT_ID → Project Settings → General → "Project ID" (prj_xxx)
       - name: Link Vercel project
         working-directory: ./web
         run: |
@@ -37,22 +52,18 @@ jobs:
             "${{ secrets.VERCEL_ORG_ID }}" \
             "${{ secrets.VERCEL_PROJECT_ID }}" \
             > .vercel/project.json
-
-      - name: Pull Vercel environment
-        working-directory: ./web
-        run: |
-          vercel pull --yes \
-            --environment=production \
-            --token=${{ secrets.VERCEL_TOKEN }}
+          echo "project.json written"
 
       - name: Build project
         working-directory: ./web
-        run: |
-          vercel build --prod \
-            --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy to production
         working-directory: ./web
-        run: |
-          vercel deploy --prebuilt --prod \
-            --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
