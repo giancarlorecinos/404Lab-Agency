@@ -25,39 +25,55 @@ jobs:
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
 
-      # Validate token and resolve org + project IDs via the Vercel REST API.
-      # If this step fails, the VERCEL_TOKEN secret is invalid or expired.
-      - name: Validate Vercel token
-        run: |
-          HTTP=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
-            https://api.vercel.com/v2/user)
-          echo "Vercel API status: $HTTP"
-          [ "$HTTP" = "200" ] || { echo "::error::VERCEL_TOKEN is invalid (HTTP $HTTP)"; exit 1; }
-
-      # Write the project link file from secrets.
-      # VERCEL_ORG_ID  → Project Settings → General → "Team ID" (team_xxx) or your user ID
-      # VERCEL_PROJECT_ID → Project Settings → General → "Project ID" (prj_xxx)
-      - name: Link Vercel project
+      # Use the Vercel REST API to find the correct projectId + orgId
+      # (the VERCEL_PROJECT_ID / VERCEL_ORG_ID secrets may be stale or wrong,
+      #  but the token is valid — so we resolve IDs at runtime).
+      - name: Discover Vercel project IDs
         working-directory: ./web
         run: |
+          RESPONSE=$(curl -s \
+            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
+            "https://api.vercel.com/v9/projects?limit=100")
+
+          echo "Available projects:"
+          echo "$RESPONSE" | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          for p in data.get('projects', []):
+              print(f\"  {p['name']}  id={p['id']}  accountId={p.get('accountId','')}\")
+          "
+
+          # Match project by name — adjust the pattern if your project has a different name
+          MATCH=$(echo "$RESPONSE" | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          for p in data.get('projects', []):
+              name = p.get('name','').lower()
+              if '404lab' in name or '404-lab' in name:
+                  print(p['id'], p.get('accountId',''))
+                  break
+          ")
+
+          if [ -z "\$MATCH" ]; then
+            echo '::error::Could not find a project matching "404lab" — check the name above and update the workflow match pattern'
+            exit 1
+          fi
+
+          PROJECT_ID=\$(echo "\$MATCH" | awk '{print \$1}')
+          ORG_ID=\$(echo "\$MATCH" | awk '{print \$2}')
+          echo "Resolved → projectId=\$PROJECT_ID  orgId=\$ORG_ID"
+
           mkdir -p .vercel
-          printf '{"orgId":"%s","projectId":"%s"}' \
-            "${{ secrets.VERCEL_ORG_ID }}" \
-            "${{ secrets.VERCEL_PROJECT_ID }}" \
-            > .vercel/project.json
-          echo "project.json written"
+          printf '{"orgId":"%s","projectId":"%s"}' "\$ORG_ID" "\$PROJECT_ID" > .vercel/project.json
+
+      - name: Pull Vercel environment
+        working-directory: ./web
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Build project
         working-directory: ./web
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy to production
         working-directory: ./web
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
